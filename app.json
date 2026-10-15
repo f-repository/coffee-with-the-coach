@@ -1,13 +1,14 @@
 {
   "expo": {
-    "name": "coffee-with-the-coach",
+    "name": "Coffee with the Coach",
     "slug": "coffee-with-the-coach",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false,
+      "bundleIdentifier": "com.wpileadership.coffeewiththecoach"
     },
     "android": {
       "adaptiveIcon": {
@@ -20,6 +21,17 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      [
+        "expo-calendar",
+        {
+          "calendarPermission": "Coffee with the Coach adds your booked session to your calendar."
+        }
+      ]
+    ],
+    "scheme": "coffeewiththecoach"
   }
 }
