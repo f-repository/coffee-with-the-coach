@@ -1,16 +1,15 @@
 import { router } from 'expo-router';
 import { ArrowRight, CalendarCheck, ChevronDown, Clock, Gift, Menu, Video } from 'lucide-react-native';
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { COACHES } from '../api';
 import { useBooking } from '../booking/BookingContext';
 import { BrandMark, HeroImage } from '../components/Brand';
 import { Button, OptionSheet } from '../components/ui';
 import { colors, fonts, radius } from '../theme';
 
 export default function Welcome() {
-  const { coach, setCoach } = useBooking();
+  const { coaches, coachesError, reloadCoaches, coach, setCoach } = useBooking();
   const [picking, setPicking] = useState(false);
 
   return (
@@ -34,35 +33,50 @@ export default function Welcome() {
 
           <View style={{ gap: 10 }}>
             <Text style={styles.label}>Choose a coach</Text>
-            <Pressable
-              style={styles.dropdown}
-              onPress={() => setPicking(true)}
-              accessibilityRole="button"
-              accessibilityLabel={`Coach: ${coach.name}. Change coach`}
-            >
-              <View style={{ flex: 1, gap: 2 }}>
-                <Text style={styles.coachName}>{coach.name}</Text>
-                <Text style={styles.coachCredential}>{coach.credential}</Text>
-              </View>
-              <ChevronDown size={17} color={colors.navy} strokeWidth={2} />
-            </Pressable>
+            {coach ? (
+              <Pressable
+                style={styles.dropdown}
+                onPress={() => setPicking(true)}
+                disabled={(coaches?.length ?? 0) < 2}
+                accessibilityRole="button"
+                accessibilityLabel={`Coach: ${coach.name}. Change coach`}
+              >
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text style={styles.coachName}>{coach.name}</Text>
+                  <Text style={styles.coachCredential}>{coach.credential}</Text>
+                </View>
+                {(coaches?.length ?? 0) > 1 && <ChevronDown size={17} color={colors.navy} strokeWidth={2} />}
+              </Pressable>
+            ) : (
+              <Pressable style={styles.dropdown} onPress={reloadCoaches} disabled={!coachesError} accessibilityRole="button">
+                {coachesError ? (
+                  <Text style={styles.coachCredential}>Couldn't load coaches. Tap to try again.</Text>
+                ) : coaches ? (
+                  <Text style={styles.coachCredential}>No coaches are taking bookings right now.</Text>
+                ) : (
+                  <ActivityIndicator color={colors.blue} />
+                )}
+              </Pressable>
+            )}
           </View>
 
           <View style={styles.facts}>
-            <Fact icon={<Clock size={18} color={colors.navy} strokeWidth={1.75} />} label={`${coach.sessionMinutes} minutes`} />
+            <Fact icon={<Clock size={18} color={colors.navy} strokeWidth={1.75} />} label={`${coach?.sessionMinutes ?? 30} minutes`} />
             <Fact icon={<Video size={18} color={colors.navy} strokeWidth={1.75} />} label="Online" />
             <Fact icon={<Gift size={18} color={colors.navy} strokeWidth={1.75} />} label="Complimentary" />
           </View>
 
-          <Button label="Find a time for your coffee" icon={ArrowRight} variant="dark" onPress={() => router.push('/time')} />
+          <Button label="Find a time for your coffee" icon={ArrowRight} variant="dark" disabled={!coach} onPress={() => router.push('/time')} />
 
-          <View style={styles.reassurance}>
-            <CalendarCheck size={14} color={colors.mutedStrong} strokeWidth={1.75} />
-            <Text style={styles.small}>{`Available times from ${coach.firstName}'s Calendar`}</Text>
-          </View>
+          {coach && (
+            <View style={styles.reassurance}>
+              <CalendarCheck size={14} color={colors.mutedStrong} strokeWidth={1.75} />
+              <Text style={styles.small}>{`Live availability from ${coach.firstName}'s calendar`}</Text>
+            </View>
+          )}
 
           <Pressable
-            onPress={() => Alert.alert('Coach sign-in', 'Coach accounts are coming in a later build.')}
+            onPress={() => router.push('/coach')}
             accessibilityRole="link"
             style={{ alignSelf: 'center' }}
           >
@@ -74,10 +88,10 @@ export default function Welcome() {
       <OptionSheet
         visible={picking}
         title="Choose a coach"
-        options={COACHES.map((c) => c.id)}
-        selected={coach.id}
-        renderLabel={(id) => COACHES.find((c) => c.id === id)!.name}
-        onSelect={(id) => setCoach(COACHES.find((c) => c.id === id)!)}
+        options={(coaches ?? []).map((c) => c.id)}
+        selected={coach?.id ?? null}
+        renderLabel={(id) => coaches!.find((c) => c.id === id)!.name}
+        onSelect={(id) => setCoach(coaches!.find((c) => c.id === id)!)}
         onClose={() => setPicking(false)}
       />
     </SafeAreaView>

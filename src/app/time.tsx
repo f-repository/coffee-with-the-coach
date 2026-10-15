@@ -1,6 +1,6 @@
-import { router } from 'expo-router';
+import { Redirect, router, useFocusEffect } from 'expo-router';
 import { ArrowRight, Check, ChevronDown, ChevronLeft, ChevronRight, Globe } from 'lucide-react-native';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getAvailability, type Slot } from '../api';
@@ -29,17 +29,27 @@ export default function ChooseTime() {
   const [day, setDay] = useState<string | null>(null);
   const [pickingZone, setPickingZone] = useState(false);
 
-  useEffect(() => {
-    let live = true;
-    setSlots(null);
-    setError(false);
-    getAvailability(coach.id)
-      .then((s) => live && setSlots(s))
-      .catch(() => live && setError(true));
-    return () => {
-      live = false;
-    };
-  }, [coach.id]);
+  // Reload whenever the screen is shown, so times booked meanwhile disappear.
+  const coachId = coach?.id;
+  useFocusEffect(
+    useCallback(() => {
+      if (!coachId) return;
+      let live = true;
+      setError(false);
+      getAvailability(coachId)
+        .then((s) => {
+          if (!live) return;
+          setSlots(s);
+          // Drop the chosen time if it's no longer offered.
+          if (chosen && !s.some((x) => x.start === chosen.start)) setSlot(null);
+        })
+        .catch(() => live && setError(true));
+      return () => {
+        live = false;
+      };
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [coachId]),
+  );
 
   // Group slots by local day in the viewer's chosen timezone.
   const byDay = useMemo(() => {
@@ -68,6 +78,8 @@ export default function ChooseTime() {
   const firstMonth: Month = { year: today.year, month: today.month };
   const lastDay = days[days.length - 1];
   const lastMonth: Month | null = lastDay ? { year: +lastDay.slice(0, 4), month: +lastDay.slice(5, 7) } : null;
+
+  if (!coach) return <Redirect href="/" />;
 
   const daySlots = (day && byDay.get(day)) || [];
   const chosenStart = chosen ? new Date(chosen.start) : null;
@@ -165,7 +177,7 @@ export default function ChooseTime() {
               {`${formatDate(chosenStart, timeZone, { day: 'numeric', month: 'short' })} · ${formatTime(chosenStart, timeZone)}–${formatTime(new Date(chosen.end), timeZone)} · ${coach.sessionMinutes} min`}
             </Text>
           )}
-          <Text style={styles.small}>{`Only free times from ${coach.firstName}'s Google Calendar.`}</Text>
+          <Text style={styles.small}>{`Times ${coach.firstName} has set aside for coffee.`}</Text>
         </View>
 
         <Button label="Continue with this time" icon={ArrowRight} disabled={!chosen} onPress={() => router.push('/details')} />

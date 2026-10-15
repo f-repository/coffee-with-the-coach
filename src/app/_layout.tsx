@@ -19,6 +19,7 @@ export default function RootLayout() {
           <Stack.Screen name="time" />
           <Stack.Screen name="details" />
           <Stack.Screen name="confirmed" options={{ gestureEnabled: false }} />
+          <Stack.Screen name="coach" />
         </Stack>
       </BookingProvider>
     </SafeAreaProvider>

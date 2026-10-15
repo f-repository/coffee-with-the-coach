@@ -14,7 +14,7 @@ import {
   type TextInputProps,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { createBooking, TOPICS } from '../api';
+import { createBooking, SlotTakenError, TOPICS } from '../api';
 import { useBooking } from '../booking/BookingContext';
 import { BrandMark } from '../components/Brand';
 import { AppointmentCard, Button, OptionSheet, Progress, TopBar, styles as ui } from '../components/ui';
@@ -24,7 +24,7 @@ const NOTES_MAX = 500;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function Details() {
-  const { coach, slot, timeZone, details, setDetails, setBooking } = useBooking();
+  const { coach, slot, setSlot, timeZone, details, setDetails, setBooking } = useBooking();
   const [name, setName] = useState(details?.name ?? '');
   const [email, setEmail] = useState(details?.email ?? '');
   const [phone, setPhone] = useState(details?.phone ?? '');
@@ -35,13 +35,14 @@ export default function Details() {
   const [emailTouched, setEmailTouched] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  if (!coach) return <Redirect href="/" />;
   if (!slot) return <Redirect href="/time" />;
 
   const emailValid = EMAIL_RE.test(email.trim());
   const canSubmit = name.trim().length > 0 && emailValid && consent;
 
   async function submit() {
-    if (!slot) return;
+    if (!slot || !coach) return;
     const d = { name: name.trim(), email: email.trim(), phone: phone.trim(), topic, notes: notes.trim() };
     setSubmitting(true);
     try {
@@ -49,8 +50,14 @@ export default function Details() {
       setDetails(d);
       setBooking(booking);
       router.replace('/confirmed');
-    } catch {
-      Alert.alert('Booking failed', 'That time may have just been taken. Please try another time.');
+    } catch (e) {
+      if (e instanceof SlotTakenError) {
+        Alert.alert('That time was just taken', 'Someone booked it a moment ago. Please choose another time.');
+        setSlot(null);
+        router.back();
+      } else {
+        Alert.alert('Booking failed', "We couldn't complete your booking. Please check your connection and try again.");
+      }
     } finally {
       setSubmitting(false);
     }

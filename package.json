@@ -5,13 +5,17 @@
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
     "@expo-google-fonts/lora": "^0.4.2",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@supabase/supabase-js": "^2.118.0",
     "expo": "~57.0.30",
+    "expo-auth-session": "~57.0.16",
     "expo-calendar": "~57.0.5",
     "expo-constants": "~57.0.22",
     "expo-font": "~57.0.4",
     "expo-linking": "~57.0.13",
     "expo-router": "~57.0.28",
     "expo-status-bar": "~57.0.1",
+    "expo-web-browser": "~57.0.3",
     "lucide-react-native": "^1.57.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
@@ -19,6 +23,7 @@
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.26.0",
     "react-native-svg": "15.15.4",
+    "react-native-url-polyfill": "^4.0.0",
     "react-native-web": "~0.21.0"
   },
   "devDependencies": {
@@ -30,7 +35,9 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "typecheck:server": "tsc -p supabase/tsconfig.json",
+    "test": "node --test supabase/functions/_shared/*.test.ts"
   },
   "private": true
 }

@@ -14,6 +14,14 @@ export const colors = {
   footer: '#7fb3d3',
   white: '#ffffff',
   error: '#b4232e',
+  success: '#2f7d4f',
+  coach: {
+    bg: '#eff6fa',
+    muted: '#6b8fa8',
+    border: '#c5dcea',
+    sky: '#c8e3f0',
+    badge: '#dff0f7',
+  },
   bg: {
     welcome: '#eef4f8',
     time: '#f0f6fc',

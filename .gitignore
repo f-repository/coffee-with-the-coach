@@ -42,3 +42,4 @@ yarn-error.*
 
 # web preview build
 dist/
+.env

@@ -10,7 +10,7 @@ import { colors, fonts, radius } from '../theme';
 
 export default function Confirmed() {
   const { coach, slot, timeZone, details, booking, reset } = useBooking();
-  if (!slot || !details || !booking) return <Redirect href="/" />;
+  if (!coach || !slot || !details || !booking) return <Redirect href="/" />;
 
   const firstName = details.name.split(/\s+/)[0];
 
@@ -28,7 +28,7 @@ export default function Confirmed() {
     }
     try {
       await createEventInCalendarAsync({
-        title: `Coffee with ${coach.firstName}`,
+        title: `Coffee with ${coach!.firstName}`,
         startDate: new Date(slot.start),
         endDate: new Date(slot.end),
         notes: `Our focus: ${details!.topic}`,

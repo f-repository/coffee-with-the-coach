@@ -1,0 +1,19 @@
+# Supabase project config (used by `supabase functions deploy` / `supabase db push`).
+project_id = "coffee-with-the-coach"
+
+# Customer-facing functions are public; they use the service role internally.
+[functions.coaches]
+verify_jwt = false
+
+[functions.availability]
+verify_jwt = false
+
+[functions.book]
+verify_jwt = false
+
+# Coach-only functions require a signed-in coach.
+[functions.google-connect]
+verify_jwt = true
+
+[functions.cancel-booking]
+verify_jwt = true

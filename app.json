@@ -30,7 +30,8 @@
         {
           "calendarPermission": "Coffee with the Coach adds your booked session to your calendar."
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "scheme": "coffeewiththecoach"
   }

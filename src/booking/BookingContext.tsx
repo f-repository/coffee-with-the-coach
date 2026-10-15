@@ -1,5 +1,5 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
-import { COACHES, type Booking, type Coach, type Slot } from '../api';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { getCoaches, type Booking, type Coach, type Slot } from '../api';
 import { deviceTimeZone } from '../lib/time';
 
 export type Details = {
@@ -11,7 +11,10 @@ export type Details = {
 };
 
 type BookingState = {
-  coach: Coach;
+  coaches: Coach[] | null;
+  coachesError: boolean;
+  reloadCoaches: () => void;
+  coach: Coach | null;
   setCoach: (c: Coach) => void;
   timeZone: string;
   setTimeZone: (tz: string) => void;
@@ -27,14 +30,31 @@ type BookingState = {
 const BookingContext = createContext<BookingState | null>(null);
 
 export function BookingProvider({ children }: { children: ReactNode }) {
-  const [coach, setCoach] = useState<Coach>(COACHES[0]);
+  const [coaches, setCoaches] = useState<Coach[] | null>(null);
+  const [coachesError, setCoachesError] = useState(false);
+  const [coach, setCoach] = useState<Coach | null>(null);
   const [timeZone, setTimeZone] = useState(deviceTimeZone);
   const [slot, setSlot] = useState<Slot | null>(null);
   const [details, setDetails] = useState<Details | null>(null);
   const [booking, setBooking] = useState<Booking | null>(null);
 
+  const reloadCoaches = useCallback(() => {
+    setCoachesError(false);
+    getCoaches()
+      .then((list) => {
+        setCoaches(list);
+        setCoach((cur) => list.find((c) => c.id === cur?.id) ?? list[0] ?? null);
+      })
+      .catch(() => setCoachesError(true));
+  }, []);
+
+  useEffect(reloadCoaches, [reloadCoaches]);
+
   const value = useMemo<BookingState>(
     () => ({
+      coaches,
+      coachesError,
+      reloadCoaches,
       coach,
       setCoach: (c) => {
         setCoach(c);
@@ -53,7 +73,7 @@ export function BookingProvider({ children }: { children: ReactNode }) {
         setBooking(null);
       },
     }),
-    [coach, timeZone, slot, details, booking],
+    [coaches, coachesError, reloadCoaches, coach, timeZone, slot, details, booking],
   );
 
   return <BookingContext.Provider value={value}>{children}</BookingContext.Provider>;
