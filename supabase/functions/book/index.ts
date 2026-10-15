@@ -8,6 +8,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type Body = {
   coachId?: string;
+  duration?: number;
   slot?: { start?: string };
   timeZone?: string;
   name?: string;
@@ -44,10 +45,13 @@ Deno.serve(async (req) => {
   if (!data) return json({ error: 'Coach not found' }, 404);
   const coach = data as CoachRow;
 
+  const duration = b.duration ?? coach.session_minutes;
+  if (![30, 60].includes(duration)) return json({ error: 'duration must be 30 or 60' }, 400);
+
   // Re-check against live availability (rules, bookings and Google Calendar).
   let slots;
   try {
-    slots = await offeredSlots(db, coach);
+    slots = await offeredSlots(db, coach, duration);
   } catch (e) {
     console.error('book: availability', e);
     return json({ error: 'Could not check availability' }, 502);
@@ -55,7 +59,7 @@ Deno.serve(async (req) => {
   if (!isOffered(slots, b.slot.start)) return json({ error: 'slot_taken' }, 409);
 
   const start = new Date(b.slot.start);
-  const end = new Date(start.getTime() + coach.session_minutes * 60_000);
+  const end = new Date(start.getTime() + duration * 60_000);
 
   // Claim the slot. The unique index means only one concurrent request wins.
   const { data: booking, error } = await db

@@ -65,7 +65,7 @@ export async function googleToken(db: SupabaseClient, coachId: string) {
  * Slots the coach offers right now. A coach without a connected Google Calendar
  * offers nothing, since conflicts can't be checked.
  */
-export async function offeredSlots(db: SupabaseClient, coach: CoachRow, now = new Date()): Promise<Interval[]> {
+export async function offeredSlots(db: SupabaseClient, coach: CoachRow, durationMinutes = coach.session_minutes, now = new Date()): Promise<Interval[]> {
   const token = await googleToken(db, coach.id);
   if (!token) return [];
 
@@ -85,7 +85,7 @@ export async function offeredSlots(db: SupabaseClient, coach: CoachRow, now = ne
 
   return computeSlots({
     timeZone: coach.time_zone,
-    sessionMinutes: coach.session_minutes,
+    sessionMinutes: durationMinutes,
     bufferMinutes: coach.buffer_minutes,
     minNoticeHours: coach.min_notice_hours,
     bookingWindowDays: coach.booking_window_days,

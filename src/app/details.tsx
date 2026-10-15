@@ -24,7 +24,7 @@ const NOTES_MAX = 500;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function Details() {
-  const { coach, slot, setSlot, timeZone, details, setDetails, setBooking } = useBooking();
+  const { coach, slot, setSlot, timeZone, details, setDetails, setBooking, durationMinutes } = useBooking();
   const [name, setName] = useState(details?.name ?? '');
   const [email, setEmail] = useState(details?.email ?? '');
   const [phone, setPhone] = useState(details?.phone ?? '');
@@ -46,7 +46,7 @@ export default function Details() {
     const d = { name: name.trim(), email: email.trim(), phone: phone.trim(), topic, notes: notes.trim() };
     setSubmitting(true);
     try {
-      const booking = await createBooking({ coachId: coach.id, slot, timeZone, ...d });
+      const booking = await createBooking({ coachId: coach.id, durationMinutes, slot, timeZone, ...d });
       setDetails(d);
       setBooking(booking);
       router.replace('/confirmed');
