@@ -38,7 +38,6 @@ export default function Welcome() {
               <Pressable
                 style={styles.dropdown}
                 onPress={() => setPicking(true)}
-                disabled={(coaches?.length ?? 0) < 2}
                 accessibilityRole="button"
                 accessibilityLabel={`Coach: ${coach.name}. Change coach`}
               >
@@ -46,7 +45,7 @@ export default function Welcome() {
                   <Text style={styles.coachName}>{coach.name}</Text>
                   <Text style={styles.coachCredential}>{coach.credential}</Text>
                 </View>
-                {(coaches?.length ?? 0) > 1 && <ChevronDown size={17} color={colors.navy} strokeWidth={2} />}
+                <ChevronDown size={17} color={colors.navy} strokeWidth={2} />
               </Pressable>
             ) : (
               <Pressable style={styles.dropdown} onPress={reloadCoaches} disabled={!coachesError} accessibilityRole="button">

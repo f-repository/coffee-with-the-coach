@@ -1,6 +1,6 @@
 import { Redirect, router, useFocusEffect } from 'expo-router';
 import { ArrowRight, Check, ChevronDown, ChevronLeft, ChevronRight, Globe } from 'lucide-react-native';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getAvailability, type Slot } from '../api';
@@ -25,8 +25,9 @@ export default function ChooseTime() {
   const { coach, timeZone, setTimeZone, slot: chosen, setSlot, durationMinutes } = useBooking();
   const [slots, setSlots] = useState<Slot[] | null>(null);
   const [error, setError] = useState(false);
-  const [month, setMonth] = useState<Month | null>(null);
-  const [day, setDay] = useState<string | null>(null);
+  // The day/month the viewer picked; null until they pick one.
+  const [pickedMonth, setMonth] = useState<Month | null>(null);
+  const [pickedDay, setDay] = useState<string | null>(null);
   const [pickingZone, setPickingZone] = useState(false);
 
   // Reload whenever the screen is shown, so times booked meanwhile disappear.
@@ -63,16 +64,12 @@ export default function ChooseTime() {
 
   const days = useMemo(() => [...byDay.keys()].sort(), [byDay]);
 
-  // Keep the selected day if it still has times; otherwise jump to the chosen
-  // slot's day or the first day with availability.
-  useEffect(() => {
-    if (!days.length || (day && byDay.has(day))) return;
-    const preferred = chosen ? dateKey(new Date(chosen.start), timeZone) : null;
-    const target = preferred && byDay.has(preferred) ? preferred : days[0];
-    setDay(target);
-    setMonth({ year: +target.slice(0, 4), month: +target.slice(5, 7) });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [days]);
+  // Show the picked day if it still has times; otherwise the chosen slot's day
+  // or the first day with availability.
+  const chosenDay = chosen ? dateKey(new Date(chosen.start), timeZone) : null;
+  const day =
+    pickedDay && byDay.has(pickedDay) ? pickedDay : chosenDay && byDay.has(chosenDay) ? chosenDay : (days[0] ?? null);
+  const month: Month | null = pickedMonth ?? (day ? { year: +day.slice(0, 4), month: +day.slice(5, 7) } : null);
 
   const today = zonedParts(new Date(), timeZone);
   const firstMonth: Month = { year: today.year, month: today.month };

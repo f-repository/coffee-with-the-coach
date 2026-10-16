@@ -28,6 +28,8 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
+    "eslint": "^9.0.0",
+    "eslint-config-expo": "~57.0.2",
     "typescript": "~6.0.3"
   },
   "scripts": {
@@ -37,7 +39,8 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "typecheck:server": "tsc -p supabase/tsconfig.json",
-    "test": "node --test supabase/functions/_shared/*.test.ts"
+    "test": "node --test supabase/functions/_shared/*.test.ts",
+    "lint": "expo lint"
   },
   "private": true
 }

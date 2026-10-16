@@ -8,7 +8,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type Body = {
   coachId?: string;
-  duration?: number;
+  durationMinutes?: number;
   slot?: { start?: string };
   timeZone?: string;
   name?: string;
@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
   if (!data) return json({ error: 'Coach not found' }, 404);
   const coach = data as CoachRow;
 
-  const duration = b.duration ?? coach.session_minutes;
+  const duration = b.durationMinutes ?? coach.session_minutes;
   if (![30, 60].includes(duration)) return json({ error: 'duration must be 30 or 60' }, 400);
 
   // Re-check against live availability (rules, bookings and Google Calendar).

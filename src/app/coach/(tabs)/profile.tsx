@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { ChevronDown } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useCoach } from '../../../coach/CoachContext';
@@ -18,12 +18,6 @@ export default function CoachProfileScreen() {
   const [saving, setSaving] = useState(false);
   const [pickingZone, setPickingZone] = useState(false);
 
-  useEffect(() => {
-    setName(profile?.name ?? '');
-    setFirstName(profile?.first_name ?? '');
-    setCredential(profile?.credential ?? '');
-  }, [profile?.name, profile?.first_name, profile?.credential]);
-
   if (!profile) return null;
   const dirty = name !== profile.name || firstName !== profile.first_name || credential !== profile.credential;
 
@@ -34,7 +28,11 @@ export default function CoachProfileScreen() {
     }
     setSaving(true);
     try {
-      await updateProfile({ name: name.trim(), first_name: firstName.trim(), credential: credential.trim() });
+      const changes = { name: name.trim(), first_name: firstName.trim(), credential: credential.trim() };
+      await updateProfile(changes);
+      setName(changes.name);
+      setFirstName(changes.first_name);
+      setCredential(changes.credential);
     } catch (e) {
       Alert.alert("Couldn't save", e instanceof Error ? e.message : 'Please try again.');
     } finally {

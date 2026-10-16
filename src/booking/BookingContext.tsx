@@ -45,8 +45,7 @@ export function BookingProvider({ children }: { children: ReactNode }) {
   const [details, setDetails] = useState<Details | null>(null);
   const [booking, setBooking] = useState<Booking | null>(null);
 
-  const reloadCoaches = useCallback(() => {
-    setCoachesError(false);
+  const fetchCoaches = useCallback(() => {
     getCoaches()
       .then((list) => {
         setCoaches(list);
@@ -55,7 +54,12 @@ export function BookingProvider({ children }: { children: ReactNode }) {
       .catch(() => setCoachesError(true));
   }, []);
 
-  useEffect(reloadCoaches, [reloadCoaches]);
+  useEffect(fetchCoaches, [fetchCoaches]);
+
+  const reloadCoaches = useCallback(() => {
+    setCoachesError(false);
+    fetchCoaches();
+  }, [fetchCoaches]);
 
   const value = useMemo<BookingState>(
     () => ({
