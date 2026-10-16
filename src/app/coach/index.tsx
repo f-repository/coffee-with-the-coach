@@ -1,16 +1,25 @@
 import { Redirect, router } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { backendConfigured } from '../../api';
-import { useCoach } from '../../coach/CoachContext';
+import { SIGN_IN_REDIRECT, SignInError, useCoach } from '../../coach/CoachContext';
 import { BrandMark } from '../../components/Brand';
 import { Button, TopBar, styles as ui } from '../../components/ui';
 import { colors, fonts } from '../../theme';
 
+const STEP_LABELS: Record<SignInError['step'], string> = {
+  setup: 'Setup',
+  start: 'Starting sign-in',
+  google: 'Google sign-in',
+  session: 'Creating your session',
+  profile: 'Creating your coach profile',
+};
+
 export default function CoachSignIn() {
   const { session, profile, loading, signIn } = useCoach();
   const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
 
   if (loading) {
     return (
@@ -23,10 +32,18 @@ export default function CoachSignIn() {
 
   async function onSignIn() {
     setBusy(true);
+    setProblem(null);
     try {
-      await signIn();
+      const result = await signIn();
+      if (result === 'cancelled') {
+        setProblem(
+          'Sign-in was closed before finishing. If you saw a "localhost" error page, add the return address below ' +
+            'to Supabase → Authentication → URL Configuration → Redirect URLs.',
+        );
+      }
     } catch (e) {
-      Alert.alert("Couldn't sign in", e instanceof Error ? e.message : 'Please try again.');
+      const step = e instanceof SignInError ? STEP_LABELS[e.step] : 'Sign-in';
+      setProblem(`${step} failed: ${e instanceof Error ? e.message : String(e)}`);
     } finally {
       setBusy(false);
     }
@@ -35,7 +52,7 @@ export default function CoachSignIn() {
   return (
     <SafeAreaView style={styles.screen}>
       <TopBar onBack={() => router.back()} center={<Text style={styles.navTitle}>Coach sign-in</Text>} />
-      <View style={styles.content}>
+      <ScrollView contentContainerStyle={styles.content}>
         <BrandMark size={64} radius={10} />
         <View style={{ gap: 8 }}>
           <Text style={ui.title}>Room for conversation.</Text>
@@ -53,10 +70,25 @@ export default function CoachSignIn() {
             </Text>
           </View>
         )}
+        {problem && (
+          <View style={styles.problem}>
+            <Text style={styles.problemText} selectable>
+              {problem}
+            </Text>
+          </View>
+        )}
         <Pressable onPress={() => router.replace('/')} style={{ alignSelf: 'center' }} accessibilityRole="link">
           <Text style={styles.link}>Back to booking</Text>
         </Pressable>
-      </View>
+        {backendConfigured && (
+          <View style={{ gap: 4 }}>
+            <Text style={styles.hintLabel}>Return address (must be in Supabase Redirect URLs)</Text>
+            <Text style={styles.hint} selectable>
+              {SIGN_IN_REDIRECT}
+            </Text>
+          </View>
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -69,4 +101,8 @@ const styles = StyleSheet.create({
   notice: { backgroundColor: colors.coach.badge, borderRadius: 12, padding: 14 },
   noticeText: { fontFamily: fonts.regular, fontSize: 13, lineHeight: 19, color: colors.navy },
   link: { fontFamily: fonts.regular, fontSize: 12, color: colors.link },
+  problem: { backgroundColor: '#f8e7e8', borderRadius: 12, padding: 14 },
+  problemText: { fontFamily: fonts.regular, fontSize: 13, lineHeight: 19, color: colors.error },
+  hintLabel: { fontFamily: fonts.medium, fontSize: 10, color: colors.coach.muted },
+  hint: { fontFamily: fonts.regular, fontSize: 11, color: colors.navy },
 });

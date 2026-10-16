@@ -15,6 +15,21 @@ const CALENDAR_SCOPES = [
   'https://www.googleapis.com/auth/calendar.freebusy',
 ].join(' ');
 
+/** Where Supabase sends the browser back to; must be on Supabase's Redirect URLs list. */
+export const SIGN_IN_REDIRECT = Linking.createURL('coach/auth');
+
+export type SignInResult = 'signed-in' | 'cancelled';
+
+/** A sign-in failure, tagged with the step that failed so it can be diagnosed. */
+export class SignInError extends Error {
+  constructor(
+    readonly step: 'setup' | 'start' | 'google' | 'session' | 'profile',
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
 export type CoachProfile = {
   id: string;
   slug: string;
@@ -34,7 +49,7 @@ type CoachState = {
   session: Session | null;
   profile: CoachProfile | null;
   loading: boolean;
-  signIn: () => Promise<void>;
+  signIn: () => Promise<SignInResult>;
   signOut: () => Promise<void>;
   updateProfile: (changes: Partial<CoachProfile>) => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -101,43 +116,65 @@ export function CoachProvider({ children }: { children: ReactNode }) {
     if (session) setProfile(await loadProfile(session.user.id));
   }, [session]);
 
-  const signIn = useCallback(async () => {
-    if (!supabase) throw new Error('The booking backend is not set up yet.');
-    const redirectTo = Linking.createURL('coach/auth');
+  const signIn = useCallback(async (): Promise<SignInResult> => {
+    if (!supabase) throw new SignInError('setup', 'The booking backend is not set up yet.');
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo,
+        redirectTo: SIGN_IN_REDIRECT,
         skipBrowserRedirect: true,
         scopes: CALENDAR_SCOPES,
         // Offline access + consent so Google returns a refresh token every time.
         queryParams: { access_type: 'offline', prompt: 'consent' },
       },
     });
-    if (error) throw error;
+    if (error) throw new SignInError('start', error.message);
 
-    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-    if (result.type !== 'success') return; // cancelled
+    const result = await WebBrowser.openAuthSessionAsync(data.url, SIGN_IN_REDIRECT);
+    // Closing the browser lands here too, including after Supabase sent it
+    // somewhere other than the app (e.g. localhost) because the redirect URL
+    // isn't on its allow list.
+    if (result.type !== 'success') return 'cancelled';
 
-    const params = new URL(result.url).searchParams;
+    // Supabase reports errors in the query or the #fragment depending on where they occur.
+    const url = new URL(result.url);
+    const params = new URLSearchParams(url.search);
+    new URLSearchParams(url.hash.replace(/^#/, '')).forEach((v, k) => params.set(k, v));
     const code = params.get('code');
-    if (!code) throw new Error(params.get('error_description') ?? 'Google sign-in did not complete.');
+    if (!code) {
+      throw new SignInError(
+        'google',
+        params.get('error_description') ?? params.get('error') ?? `No sign-in code returned (${result.url.slice(0, 120)})`,
+      );
+    }
 
     const { data: auth, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-    if (exchangeError) throw exchangeError;
+    if (exchangeError) throw new SignInError('session', exchangeError.message);
 
-    let coach = await ensureProfile(auth.user);
+    let coach: CoachProfile;
+    try {
+      coach = await ensureProfile(auth.user);
+    } catch (e) {
+      throw new SignInError('profile', e instanceof Error ? e.message : String(e));
+    }
+
     const refreshToken = auth.session.provider_refresh_token;
     if (refreshToken) {
-      await callFunction('google-connect', {
-        method: 'POST',
-        token: auth.session.access_token,
-        body: JSON.stringify({ refreshToken, googleEmail: auth.user.email }),
-      });
+      try {
+        await callFunction('google-connect', {
+          method: 'POST',
+          token: auth.session.access_token,
+          body: JSON.stringify({ refreshToken, googleEmail: auth.user.email }),
+        });
+      } catch (e) {
+        // Still signed in; the Calendar tab offers to reconnect.
+        console.warn('google-connect failed', e);
+      }
       coach = (await loadProfile(auth.user.id)) ?? coach;
     }
     setSession(auth.session);
     setProfile(coach);
+    return 'signed-in';
   }, []);
 
   const signOut = useCallback(async () => {
