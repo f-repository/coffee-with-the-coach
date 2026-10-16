@@ -1,16 +1,17 @@
 import { router } from 'expo-router';
-import { ArrowRight, CalendarCheck, ChevronDown, Clock, Gift, Menu, Video } from 'lucide-react-native';
+import { ArrowRight, CalendarCheck, ChevronDown, Clock, Menu, Video } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useBooking } from '../booking/BookingContext';
+import { DURATION_OPTIONS, useBooking } from '../booking/BookingContext';
 import { BrandMark, HeroImage } from '../components/Brand';
 import { Button, OptionSheet } from '../components/ui';
 import { colors, fonts, radius } from '../theme';
 
 export default function Welcome() {
-  const { coaches, coachesError, reloadCoaches, coach, setCoach } = useBooking();
+  const { coaches, coachesError, reloadCoaches, coach, setCoach, durationMinutes, setDurationMinutes } = useBooking();
   const [picking, setPicking] = useState(false);
+  const [pickingDuration, setPickingDuration] = useState(false);
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
@@ -60,10 +61,24 @@ export default function Welcome() {
             )}
           </View>
 
+          <View style={{ gap: 10 }}>
+            <Text style={styles.label}>Session length</Text>
+            <Pressable
+              style={styles.dropdown}
+              onPress={() => setPickingDuration(true)}
+              accessibilityRole="button"
+              accessibilityLabel={`Session length: ${durationMinutes} minutes. Change session length`}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={styles.coachName}>{durationMinutes} minutes</Text>
+              </View>
+              <ChevronDown size={17} color={colors.navy} strokeWidth={2} />
+            </Pressable>
+          </View>
+
           <View style={styles.facts}>
-            <Fact icon={<Clock size={18} color={colors.navy} strokeWidth={1.75} />} label={`${coach?.sessionMinutes ?? 30} minutes`} />
+            <Fact icon={<Clock size={18} color={colors.navy} strokeWidth={1.75} />} label={`${durationMinutes} minutes`} />
             <Fact icon={<Video size={18} color={colors.navy} strokeWidth={1.75} />} label="Online" />
-            <Fact icon={<Gift size={18} color={colors.navy} strokeWidth={1.75} />} label="Complimentary" />
           </View>
 
           <Button label="Find a time for your coffee" icon={ArrowRight} variant="dark" disabled={!coach} onPress={() => router.push('/time')} />
@@ -93,6 +108,16 @@ export default function Welcome() {
         renderLabel={(id) => coaches!.find((c) => c.id === id)!.name}
         onSelect={(id) => setCoach(coaches!.find((c) => c.id === id)!)}
         onClose={() => setPicking(false)}
+      />
+
+      <OptionSheet
+        visible={pickingDuration}
+        title="Session length"
+        options={DURATION_OPTIONS.map(String)}
+        selected={String(durationMinutes)}
+        renderLabel={(m) => `${m} minutes`}
+        onSelect={(m) => setDurationMinutes(Number(m))}
+        onClose={() => setPickingDuration(false)}
       />
     </SafeAreaView>
   );
@@ -133,7 +158,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     padding: 15,
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-around',
   },
   fact: { alignItems: 'center', gap: 7 },
   factLabel: { fontFamily: fonts.regular, fontSize: 11, color: colors.navy },

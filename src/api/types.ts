@@ -12,6 +12,8 @@ export type Slot = { start: string; end: string };
 
 export type BookingRequest = {
   coachId: string;
+  /** Session length the customer chose, in minutes. */
+  durationMinutes: number;
   slot: Slot;
   timeZone: string;
   name: string;

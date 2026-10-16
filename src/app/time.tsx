@@ -22,7 +22,7 @@ function addMonths(m: Month, n: number): Month {
 const monthKey = (m: Month) => `${m.year}-${String(m.month).padStart(2, '0')}`;
 
 export default function ChooseTime() {
-  const { coach, timeZone, setTimeZone, slot: chosen, setSlot } = useBooking();
+  const { coach, timeZone, setTimeZone, slot: chosen, setSlot, durationMinutes } = useBooking();
   const [slots, setSlots] = useState<Slot[] | null>(null);
   const [error, setError] = useState(false);
   const [month, setMonth] = useState<Month | null>(null);
@@ -36,7 +36,7 @@ export default function ChooseTime() {
       if (!coachId) return;
       let live = true;
       setError(false);
-      getAvailability(coachId)
+      getAvailability(coachId, durationMinutes)
         .then((s) => {
           if (!live) return;
           setSlots(s);
@@ -48,7 +48,7 @@ export default function ChooseTime() {
         live = false;
       };
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [coachId]),
+    }, [coachId, durationMinutes]),
   );
 
   // Group slots by local day in the viewer's chosen timezone.
@@ -105,11 +105,11 @@ export default function ChooseTime() {
             <BrandMark size={44} radius={8} />
             <View style={{ gap: 2 }}>
               <Text style={styles.bannerLabel}>WPI · COFFEE WITH THE COACH</Text>
-              <Text style={styles.bannerText}>{`${coach.sessionMinutes}-min session with ${coach.firstName}`}</Text>
+              <Text style={styles.bannerText}>{`${durationMinutes}-min session with ${coach.firstName}`}</Text>
             </View>
           </View>
           <Text style={ui.title}>Make a little space.</Text>
-          <Text style={ui.body}>{`Pick a day and a ${coach.sessionMinutes}-minute slot with ${coach.firstName}.`}</Text>
+          <Text style={ui.body}>{`Pick a day and a ${durationMinutes}-minute slot with ${coach.firstName}.`}</Text>
         </View>
 
         <View style={styles.calendar}>
@@ -174,7 +174,7 @@ export default function ChooseTime() {
         <View style={{ gap: 5 }}>
           {chosen && chosenStart && (
             <Text style={styles.summary}>
-              {`${formatDate(chosenStart, timeZone, { day: 'numeric', month: 'short' })} · ${formatTime(chosenStart, timeZone)}–${formatTime(new Date(chosen.end), timeZone)} · ${coach.sessionMinutes} min`}
+              {`${formatDate(chosenStart, timeZone, { day: 'numeric', month: 'short' })} · ${formatTime(chosenStart, timeZone)}–${formatTime(new Date(chosen.end), timeZone)} · ${durationMinutes} min`}
             </Text>
           )}
           <Text style={styles.small}>{`Times ${coach.firstName} has set aside for coffee.`}</Text>

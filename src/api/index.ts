@@ -47,10 +47,10 @@ export async function getCoaches(): Promise<Coach[]> {
 }
 
 /** Open slots for a coach, as UTC start/end times. */
-export async function getAvailability(coachId: string): Promise<Slot[]> {
-  if (!backendConfigured) return sampleAvailability(coachId);
+export async function getAvailability(coachId: string, durationMinutes = 30): Promise<Slot[]> {
+  if (!backendConfigured) return sampleAvailability(coachId, durationMinutes);
   const q = encodeURIComponent(coachId);
-  return (await callFunction<{ slots: Slot[] }>(`availability?coach=${q}`)).slots;
+  return (await callFunction<{ slots: Slot[] }>(`availability?coach=${q}&duration=${durationMinutes}`)).slots;
 }
 
 export async function createBooking(req: BookingRequest): Promise<Booking> {
@@ -80,7 +80,7 @@ const SAMPLE_COACHES: Coach[] = [
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-async function sampleAvailability(coachId: string): Promise<Slot[]> {
+async function sampleAvailability(coachId: string, durationMinutes: number): Promise<Slot[]> {
   const coach = SAMPLE_COACHES.find((c) => c.id === coachId);
   if (!coach) throw new Error(`Unknown coach ${coachId}`);
   await delay(300);
@@ -96,7 +96,7 @@ async function sampleAvailability(coachId: string): Promise<Slot[]> {
     [9, 10, 11, 14, 15].forEach((hour, idx) => {
       if ((day + idx * 3) % 4 === 0) return;
       const start = zonedToUtc(y, m, day, hour, 0, tz);
-      const end = new Date(start.getTime() + coach.sessionMinutes * 60000);
+      const end = new Date(start.getTime() + durationMinutes * 60000);
       slots.push({ start: start.toISOString(), end: end.toISOString() });
     });
   }

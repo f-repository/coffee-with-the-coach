@@ -10,12 +10,18 @@ export type Details = {
   notes: string;
 };
 
+/** Session lengths (in minutes) the customer can choose from. */
+export const DURATION_OPTIONS = [30, 60] as const;
+
 type BookingState = {
   coaches: Coach[] | null;
   coachesError: boolean;
   reloadCoaches: () => void;
   coach: Coach | null;
   setCoach: (c: Coach) => void;
+  /** Session length the customer picked, in minutes. */
+  durationMinutes: number;
+  setDurationMinutes: (m: number) => void;
   timeZone: string;
   setTimeZone: (tz: string) => void;
   slot: Slot | null;
@@ -33,6 +39,7 @@ export function BookingProvider({ children }: { children: ReactNode }) {
   const [coaches, setCoaches] = useState<Coach[] | null>(null);
   const [coachesError, setCoachesError] = useState(false);
   const [coach, setCoach] = useState<Coach | null>(null);
+  const [durationMinutes, setDurationMinutesState] = useState<number>(30);
   const [timeZone, setTimeZone] = useState(deviceTimeZone);
   const [slot, setSlot] = useState<Slot | null>(null);
   const [details, setDetails] = useState<Details | null>(null);
@@ -60,6 +67,11 @@ export function BookingProvider({ children }: { children: ReactNode }) {
         setCoach(c);
         setSlot(null);
       },
+      durationMinutes,
+      setDurationMinutes: (m) => {
+        setDurationMinutesState(m);
+        setSlot(null);
+      },
       timeZone,
       setTimeZone,
       slot,
@@ -73,7 +85,7 @@ export function BookingProvider({ children }: { children: ReactNode }) {
         setBooking(null);
       },
     }),
-    [coaches, coachesError, reloadCoaches, coach, timeZone, slot, details, booking],
+    [coaches, coachesError, reloadCoaches, coach, durationMinutes, timeZone, slot, details, booking],
   );
 
   return <BookingContext.Provider value={value}>{children}</BookingContext.Provider>;
